@@ -1,3 +1,75 @@
 const fs = require('fs');
 const path = require('path')
-let file = fs.createReadStream(path.join(__dirname, 'template.html'), 'utf8')
+let file;
+
+fs.mkdir(path.join(__dirname, 'project-dist'), {recursive: true}, (error)=>{
+    if(error) {
+    console.log('error0');
+    }
+})
+
+fs.createReadStream(path.join(__dirname, 'template.html')).on('data', (data, error)=>{
+    if(!error) {
+    file=data.toString();
+    fs.readdir(path.join(__dirname, 'components'), {withFileTypes: true}, (error, dirEntryList) => {
+        if(!error) {
+            dirEntryList.forEach((dirEntry)=>{
+                if(path.extname(dirEntry.name)=='.html'){
+                    let name = path.basename((__dirname, 'components', dirEntry.name), path.extname(dirEntry.name));
+                    fs.createReadStream(path.join(__dirname, 'components', dirEntry.name)).on('data', (data)=>{
+                        const writeable = fs.createWriteStream(path.join(__dirname, 'project-dist', 'index.html'));
+                        file=file.replace('{{'+name+'}}', data.toString());
+                        writeable.write(file);
+                    })
+                }
+            })
+        }
+    })
+    }
+})
+
+fs.readdir(path.join(__dirname, 'styles'), {withFileTypes: true}, (error, dirEntryList) => {
+    if(!error) {
+        dirEntryList.forEach((dirEntry)=>{
+            if(path.extname(dirEntry.name)=='.css'){
+                let data = fs.createReadStream(path.join(__dirname, 'styles', dirEntry.name), 'utf8');
+                let writeStream = fs.createWriteStream(path.join(__dirname, 'project-dist', 'style.css'));
+            }
+        })
+    }
+})
+
+fs.readdir(path.join(__dirname, 'assets'), {withFileTypes: true}, (error, dirEntryList)=>{
+    if(!error) {
+        dirEntryList.forEach((dirEntry)=>{
+            if(dirEntry.isFile()) {
+            fs.copyFile(path.join(__dirname, 'assets', dirEntry.name), path.join(__dirname, 'project-dist', dirEntry.name), (error)=>{
+                if (error) {
+                    console.log('error2')
+                }
+            })
+        }
+        if (dirEntry.isDirectory()) {
+            fs.mkdir(path.join(__dirname, 'project-dist', dirEntry.name), {recursive: true}, (error)=>{
+                if(error) {
+                console.log('error0');
+                }
+            })
+            fs.readdir(path.join(__dirname, 'assets', dirEntry.name), {withFileTypes: true}, (error, dirEntryList)=>{
+                if(!error) {
+                    dirEntryList.forEach((dirEntry1)=>{
+                        if(dirEntry1.isFile()) {
+                        fs.copyFile(path.join(__dirname, 'assets', dirEntry.name, dirEntry1.name), path.join(__dirname, 'project-dist', dirEntry.name, dirEntry1.name), (error)=>{
+                            if (error) {
+                                console.log('error3')
+                            }
+                        })
+                    }
+            })
+        }
+        })
+    }
+})
+    }})
+
+
